@@ -1,5 +1,6 @@
 package com.jhj.permissionscheck;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -57,7 +58,7 @@ public class PermissionsUtil {
 
         private Context context;
         private String[] mPermissions;
-        private int mRequestCode;
+        private int mRequestCode = 1;
         private PermissionsListener mCallback;
 
         DefaultRequest(Context context) {
@@ -66,11 +67,6 @@ public class PermissionsUtil {
 
         public DefaultRequest requestPermissions(String... permissions) {
             this.mPermissions = permissions;
-            return this;
-        }
-
-        public DefaultRequest requestCode(int requestCode) {
-            this.mRequestCode = requestCode;
             return this;
         }
 
@@ -92,6 +88,16 @@ public class PermissionsUtil {
                     mCallback.onPermissionsAllowed(mRequestCode, Arrays.asList(mPermissions));
                 }
             }
+        }
+
+
+        private boolean hasCamera() {
+            for (String mPermission : mPermissions) {
+                if (Manifest.permission.CAMERA.equals(mPermission)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
 

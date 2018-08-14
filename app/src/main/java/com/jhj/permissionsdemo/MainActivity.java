@@ -2,6 +2,7 @@ package com.jhj.permissionsdemo;
 
 import android.Manifest;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -29,15 +30,13 @@ public class MainActivity extends AppCompatActivity {
                                 , Manifest.permission.READ_EXTERNAL_STORAGE
                                 , Manifest.permission.ACCESS_FINE_LOCATION
                                 , Manifest.permission.ACCESS_COARSE_LOCATION)
-                        .requestCode(100)
                         .callback(new PermissionsListener() {
                             @Override
                             public void onPermissionsAllowed(int requestCode, @NotNull List<String> grantPermissions) {
                                 for (String grantPermission : grantPermissions) {
                                     Log.w("allow", grantPermission);
-
-                                    ImageUtil.openCamera(MainActivity.this,"/image",100);
                                 }
+                                ImageUtil.openCamera(MainActivity.this,"/image",100);
                             }
 
                             @Override
@@ -46,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
                                     if (PermissionsUtil.isCamera()) {
                                         Log.w("camera", grantPermission);
                                     }
-                                    Toast.makeText(MainActivity.this, grantPermission, Toast.LENGTH_SHORT).show();
+
                                     Log.w("denied", grantPermission);
                                 }
                             }
@@ -54,5 +53,13 @@ public class MainActivity extends AppCompatActivity {
                         .prepare();
             }
         });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 100){
+            Toast.makeText(MainActivity.this, "xxx", Toast.LENGTH_SHORT).show();
+        }
     }
 }
