@@ -13,17 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.jhj.permissionscheck
+package com.jhj.permissionscheck;
+
+import java.util.List;
 
 /**
  * 请求权限回调。
  * Created by jianhaojie on 2017/5/24.
  */
 
-interface PermissionListener {
+public interface PermissionsListener {
 
-    fun onPermissionsAllowed(requestCode: Int, grantPermissions: List<String>)
+    void onPermissionsAllowed(int requestCode, List<String> grantPermissions);
 
-    fun onPermissionDenied(requestCode: Int, deniedPermissions: List<String>, allPermissions: List<String>)
+    void onPermissionDenied(int requestCode, List<String> deniedPermissions, List<String> allPermissions);
 
 }
