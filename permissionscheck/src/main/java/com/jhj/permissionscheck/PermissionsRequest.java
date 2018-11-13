@@ -190,8 +190,8 @@ public class PermissionsRequest implements PermissionsActivity.PermissionsListen
             return this;
         }
 
-        public PermissionsRequest build() {
-            return new PermissionsRequest(this);
+        public void build() {
+            new PermissionsRequest(this);
         }
 
 
