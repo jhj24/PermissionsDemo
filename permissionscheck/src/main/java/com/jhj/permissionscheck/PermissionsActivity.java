@@ -13,20 +13,17 @@ import android.support.annotation.NonNull;
 public final class PermissionsActivity extends Activity {
 
     static final String REQUEST_PERMISSIONS = "requestPermissions";
-    static final String REQUEST_CODE = "requestCode";
+    private static PermissionsListener mPermissionsListener;
+    private int mRequestCode = 0x10000000;
 
-    private static PermissionListener mPermissionListener;
-    private int mRequestCode;
-
-    static void setPermissionListener(PermissionListener permissionListener) {
-        mPermissionListener = permissionListener;
+    static void setPermissionListener(PermissionsListener permissionsListener) {
+        mPermissionsListener = permissionsListener;
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         String[] permissions = getIntent().getStringArrayExtra(REQUEST_PERMISSIONS);
-        mRequestCode = getIntent().getIntExtra(REQUEST_CODE, -1);
         if (permissions == null) {
             finish();
             return;
@@ -38,12 +35,13 @@ public final class PermissionsActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (mRequestCode == requestCode)
-            mPermissionListener.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (mRequestCode == requestCode) {
+            mPermissionsListener.onRequestPermissionsResult(permissions, grantResults);
+        }
         finish();
     }
 
-    interface PermissionListener {
-        void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults);
+    interface PermissionsListener {
+        void onRequestPermissionsResult(String[] permissions, int[] grantResults);
     }
 }
