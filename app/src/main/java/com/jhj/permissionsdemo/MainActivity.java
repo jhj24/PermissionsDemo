@@ -27,6 +27,12 @@ public class MainActivity extends AppCompatActivity {
                                 , Manifest.permission.ACCESS_FINE_LOCATION
                                 , Manifest.permission.ACCESS_COARSE_LOCATION)
                         .callback(new OnPermissionsListener() {
+                            /**
+                             * 请求完成回调
+                             *
+                             * @param deniedPermissions 被禁止的权限
+                             * @param allPermissions 所请求的全部权限
+                             */
                             @Override
                             public void onPermissions(List<String> deniedPermissions, List<String> allPermissions) {
                                 if (deniedPermissions.size() > 0) {

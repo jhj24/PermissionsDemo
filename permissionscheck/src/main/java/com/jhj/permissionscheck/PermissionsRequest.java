@@ -93,15 +93,17 @@ public class PermissionsRequest implements PermissionsActivity.PermissionsListen
             }
         }
 
+        //对相机进行独立权限鉴定（有些手机能拍照，但不能扫描）
+        if (allowPermissionList.contains(Manifest.permission.CAMERA) && isCameraDenied()) {
+            deniedPermissionList.add(Manifest.permission.CAMERA);
+            allowPermissionList.remove(Manifest.permission.CAMERA);
+        }
+
         //对允许的权限进行底层权限鉴定
         String[] allowArray = new String[allowPermissionList.size()];
         allowPermissionList.toArray(allowArray);
         deniedPermissionList.addAll(bottomLayerPermissionsIdentify(mContext, allowArray));
 
-        //对相机进行独立权限鉴定（有些手机能拍照，但不能扫描）
-        if (allowPermissionList.contains(Manifest.permission.CAMERA) && isCameraDenied()) {
-            deniedPermissionList.add(Manifest.permission.CAMERA);
-        }
 
         return deniedPermissionList;
 
