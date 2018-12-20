@@ -68,6 +68,12 @@ public final class PermissionsCheck {
     }
 
 
+    void requestPermissionsResult(Activity activity, String[] permissions) {
+        mPermissionResultListener.onPermissionsResult(getPermissionDenied(activity, permissions), Arrays.asList(permissions));
+    }
+
+
+
     /**
      * 权限被禁，进行权限请求
      */
@@ -92,9 +98,6 @@ public final class PermissionsCheck {
 
     }
 
-    void requestPermissionsResult(Activity activity, String[] permissions) {
-        mPermissionResultListener.onPermissionsResult(getPermissionDenied(activity, permissions), Arrays.asList(permissions));
-    }
 
 
     /**
