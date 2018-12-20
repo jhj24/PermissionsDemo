@@ -1,11 +1,13 @@
 package com.jhj.permissionscheck;
 
 import android.Manifest;
+import android.app.Activity;
+import android.app.FragmentManager;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Build;
+import android.os.Bundle;
 import android.support.v4.app.AppOpsManagerCompat;
 import android.support.v4.content.ContextCompat;
 
@@ -19,19 +21,18 @@ import java.util.List;
  * Created by jhj on 17-8-9.
  */
 
-public class PermissionsRequest implements PermissionsActivity.PermissionsListener {
+public class PermissionsRequest {
 
-    private final Context mContext;
+    private final Activity mActivity;
     private final String[] mPermissions;
     private final OnPermissionsListener mCallback;
 
     private PermissionsRequest(Builder builder) {
-        mContext = builder.mContext;
+        mActivity = builder.mActivity;
         mPermissions = builder.mPermissions;
         mCallback = builder.mCallback;
         prepare();
     }
-
 
     private void prepare() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) { //Android 6.0之前不用检测
@@ -54,11 +55,31 @@ public class PermissionsRequest implements PermissionsActivity.PermissionsListen
      * 权限被禁，进行权限请求
      */
     private void requestPermissions() {
-        PermissionsActivity.setPermissionListener(this);
-        Intent intent = new Intent(mContext, PermissionsActivity.class);
-        intent.putExtra(PermissionsActivity.REQUEST_PERMISSIONS, mPermissions);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(intent);
+        String TAG = getClass().getName();
+        PermissionsFragment fragment = (PermissionsFragment) mActivity.getFragmentManager().findFragmentByTag(TAG);
+
+        if (fragment == null) {
+            Bundle bundle = new Bundle();
+            bundle.putStringArray(PermissionsFragment.REQUEST_PERMISSIONS, mPermissions);
+            fragment = new PermissionsFragment();
+            fragment.setArguments(bundle);
+
+            FragmentManager fragmentManager = mActivity.getFragmentManager();
+            fragmentManager
+                    .beginTransaction()
+                    .add(fragment, TAG)
+                    .commitAllowingStateLoss();
+            fragmentManager.executePendingTransactions();
+        }
+
+        fragment.permissionsCheck(new PermissionsFragment.PermissionsListener() {
+            @Override
+            public void onRequestPermissionsResult(String[] permissions, int[] grantResults) {
+                mCallback.onPermissions(getPermissionDenied(permissions), Arrays.asList(permissions));
+            }
+        });
+
+
     }
 
 
@@ -69,7 +90,7 @@ public class PermissionsRequest implements PermissionsActivity.PermissionsListen
      */
     private boolean isPermissionsDenied() {
         for (String permission : mPermissions) {
-            if (ContextCompat.checkSelfPermission(mContext, permission) != PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(mActivity, permission) != PackageManager.PERMISSION_GRANTED) {
                 return true;
             }
         }
@@ -86,7 +107,7 @@ public class PermissionsRequest implements PermissionsActivity.PermissionsListen
         List<String> deniedPermissionList = new ArrayList<>();
 
         for (String permission : permissions) {
-            if (ContextCompat.checkSelfPermission(mContext, permission) == PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(mActivity, permission) == PackageManager.PERMISSION_GRANTED) {
                 allowPermissionList.add(permission);
             } else {
                 deniedPermissionList.add(permission);
@@ -102,7 +123,7 @@ public class PermissionsRequest implements PermissionsActivity.PermissionsListen
         //对允许的权限进行底层权限鉴定
         String[] allowArray = new String[allowPermissionList.size()];
         allowPermissionList.toArray(allowArray);
-        deniedPermissionList.addAll(bottomLayerPermissionsIdentify(mContext, allowArray));
+        deniedPermissionList.addAll(bottomLayerPermissionsIdentify(mActivity, allowArray));
 
 
         return deniedPermissionList;
@@ -164,21 +185,15 @@ public class PermissionsRequest implements PermissionsActivity.PermissionsListen
     }
 
 
-    @Override
-    public void onRequestPermissionsResult(String[] permissions, int[] grantResults) {
-
-        mCallback.onPermissions(getPermissionDenied(permissions), Arrays.asList(permissions));
-    }
-
 
     public static class Builder {
 
-        private Context mContext;
+        private Activity mActivity;
         private String[] mPermissions;
         private OnPermissionsListener mCallback;
 
-        public Builder(Context context) {
-            this.mContext = context;
+        public Builder(Activity context) {
+            this.mActivity = context;
         }
 
 
