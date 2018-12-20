@@ -11,30 +11,46 @@ import android.os.Bundle;
 import android.support.v4.app.AppOpsManagerCompat;
 import android.support.v4.content.ContextCompat;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+public final class PermissionsCheck {
 
-/**
- * 权限请求工具类
- * Created by jhj on 17-8-9.
- */
+    private static volatile PermissionsCheck singleton;
+    private String[] mPermissions;
+    private WeakReference<Activity> mActivity;
+    private OnPermissionsResultListener mPermissionResultListener;
 
-public class PermissionsRequest {
-
-    private final Activity mActivity;
-    private final String[] mPermissions;
-    private final OnPermissionsListener mCallback;
-
-    private PermissionsRequest(Builder builder) {
-        mActivity = builder.mActivity;
-        mPermissions = builder.mPermissions;
-        mCallback = builder.mCallback;
-        prepare();
+    private PermissionsCheck(Activity mActivity) {
+        this.mActivity = new WeakReference<>(mActivity);
     }
 
-    private void prepare() {
+    public static PermissionsCheck getInstance(Activity mActivity) {
+        if (singleton == null) {
+            synchronized (PermissionsCheck.class) {
+                if (singleton == null) {
+                    singleton = new PermissionsCheck(mActivity);
+                }
+            }
+        }
+        return singleton;
+    }
+
+
+    public PermissionsCheck requestPermissions(String... permissions) {
+        this.mPermissions = permissions;
+        return this;
+    }
+
+    public void onPermissionsResult(OnPermissionsResultListener resultPermissionsListener) {
+
+        this.mPermissionResultListener = resultPermissionsListener;
+        Activity activity = mActivity.get();
+        if (activity == null) {
+            return;
+        }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) { //Android 6.0之前不用检测
             List<String> deniedList = new ArrayList<>();
             for (String permission : mPermissions) {
@@ -42,21 +58,23 @@ public class PermissionsRequest {
                     deniedList.add(permission);
                 }
             }
-            mCallback.onPermissions(deniedList, Arrays.asList(mPermissions));
-        } else if (isPermissionsDenied()) { //如果有权限被禁止，进行权限请求
-            requestPermissions();
+            mPermissionResultListener.onPermissionsResult(deniedList, Arrays.asList(mPermissions));
+        } else if (isPermissionsDenied(activity)) { //如果有权限被禁止，进行权限请求
+            requestPermissions(activity);
         } else { // 所有权限都被允许，使用原生权限管理检验
-            List<String> permissionList = getPermissionDenied(mPermissions);
-            mCallback.onPermissions(permissionList, Arrays.asList(mPermissions));
+            List<String> permissionList = getPermissionDenied(activity, mPermissions);
+            mPermissionResultListener.onPermissionsResult(permissionList, Arrays.asList(mPermissions));
         }
     }
+
 
     /**
      * 权限被禁，进行权限请求
      */
-    private void requestPermissions() {
+    private void requestPermissions(final Activity activity) {
         String TAG = getClass().getName();
-        PermissionsFragment fragment = (PermissionsFragment) mActivity.getFragmentManager().findFragmentByTag(TAG);
+        FragmentManager fragmentManager = activity.getFragmentManager();
+        PermissionsFragment fragment = (PermissionsFragment) fragmentManager.findFragmentByTag(TAG);
 
         if (fragment == null) {
             Bundle bundle = new Bundle();
@@ -64,33 +82,30 @@ public class PermissionsRequest {
             fragment = new PermissionsFragment();
             fragment.setArguments(bundle);
 
-            FragmentManager fragmentManager = mActivity.getFragmentManager();
             fragmentManager
                     .beginTransaction()
                     .add(fragment, TAG)
                     .commitAllowingStateLoss();
             fragmentManager.executePendingTransactions();
         }
+        fragment.permissionsRequest();
 
-        fragment.permissionsCheck(new PermissionsFragment.PermissionsListener() {
-            @Override
-            public void onRequestPermissionsResult(String[] permissions, int[] grantResults) {
-                mCallback.onPermissions(getPermissionDenied(permissions), Arrays.asList(permissions));
-            }
-        });
+    }
 
-
+    void requestPermissionsResult(Activity activity, String[] permissions) {
+        mPermissionResultListener.onPermissionsResult(getPermissionDenied(activity, permissions), Arrays.asList(permissions));
     }
 
 
     /**
      * 检测权限是否被禁止
      *
+     * @param activity Activity
      * @return true-禁止
      */
-    private boolean isPermissionsDenied() {
+    private boolean isPermissionsDenied(Activity activity) {
         for (String permission : mPermissions) {
-            if (ContextCompat.checkSelfPermission(mActivity, permission) != PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED) {
                 return true;
             }
         }
@@ -102,12 +117,12 @@ public class PermissionsRequest {
      *
      * @param permissions 所有权限
      */
-    private List<String> getPermissionDenied(String... permissions) {
+    private List<String> getPermissionDenied(Activity activity, String... permissions) {
         List<String> allowPermissionList = new ArrayList<>();
         List<String> deniedPermissionList = new ArrayList<>();
 
         for (String permission : permissions) {
-            if (ContextCompat.checkSelfPermission(mActivity, permission) == PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED) {
                 allowPermissionList.add(permission);
             } else {
                 deniedPermissionList.add(permission);
@@ -123,7 +138,7 @@ public class PermissionsRequest {
         //对允许的权限进行底层权限鉴定
         String[] allowArray = new String[allowPermissionList.size()];
         allowPermissionList.toArray(allowArray);
-        deniedPermissionList.addAll(bottomLayerPermissionsIdentify(mActivity, allowArray));
+        deniedPermissionList.addAll(bottomLayerPermissionsIdentify(activity, allowArray));
 
 
         return deniedPermissionList;
@@ -184,35 +199,13 @@ public class PermissionsRequest {
         return !isCanUse;
     }
 
+    /**
+     * 请求权限回调。
+     */
+    public interface OnPermissionsResultListener {
 
-
-    public static class Builder {
-
-        private Activity mActivity;
-        private String[] mPermissions;
-        private OnPermissionsListener mCallback;
-
-        public Builder(Activity context) {
-            this.mActivity = context;
-        }
-
-
-        public Builder requestPermissions(String... permissions) {
-            this.mPermissions = permissions;
-            return this;
-        }
-
-        public Builder callback(OnPermissionsListener callback) {
-            this.mCallback = callback;
-            return this;
-        }
-
-        public void build() {
-            new PermissionsRequest(this);
-        }
-
+        void onPermissionsResult(List<String> deniedPermissions, List<String> allPermissions);
 
     }
-
 
 }

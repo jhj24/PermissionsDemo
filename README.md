@@ -16,7 +16,7 @@ new PermissionsRequest.Builder(MainActivity.this)
                            * @param allPermissions 所请求的全部权限
                            */
                            @Override
-                           public void onPermissions(List<String> deniedPermissions, List<String> allPermissions) {
+                           public void onPermissionsResult(List<String> deniedPermissions, List<String> allPermissions) {
                                if (deniedPermissions.size() > 0) {
                                    System.out.print("有权限被禁止");
                                }

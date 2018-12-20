@@ -12,9 +12,8 @@ import android.support.annotation.Nullable;
 
 public final class PermissionsFragment extends Fragment {
 
-    static final String REQUEST_PERMISSIONS = "requestPermissions";
-    private PermissionsListener mPermissionsListener;
     private int mRequestCode = 0x10000000;
+    protected static final String REQUEST_PERMISSIONS = "requestPermissions";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -23,8 +22,7 @@ public final class PermissionsFragment extends Fragment {
     }
 
 
-    public void permissionsCheck(PermissionsListener permissionsListener) {
-        this.mPermissionsListener = permissionsListener;
+    protected void permissionsRequest() {
         String[] permissions = getArguments().getStringArray(REQUEST_PERMISSIONS);
         if (permissions == null) {
             return;
@@ -38,11 +36,8 @@ public final class PermissionsFragment extends Fragment {
     @Override
     public void onRequestPermissionsResult(int requestCode, @Nullable String[] permissions, @Nullable int[] grantResults) {
         if (mRequestCode == requestCode) {
-            mPermissionsListener.onRequestPermissionsResult(permissions, grantResults);
+            PermissionsCheck.getInstance(getActivity()).requestPermissionsResult(getActivity(),permissions);
         }
     }
 
-    interface PermissionsListener {
-        void onRequestPermissionsResult(String[] permissions, int[] grantResults);
-    }
 }
