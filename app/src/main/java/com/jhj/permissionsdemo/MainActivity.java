@@ -8,8 +8,6 @@ import android.view.View;
 
 import com.jhj.permissionscheck.PermissionsCheck;
 
-import java.util.List;
-
 public class MainActivity extends AppCompatActivity {
 
     @Override
@@ -20,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                PermissionsCheck.getInstance(MainActivity.this)
+                PermissionsCheck.init(MainActivity.this)
                         .requestPermissions(Manifest.permission.CAMERA
                                 , Manifest.permission.WRITE_EXTERNAL_STORAGE
                                 , Manifest.permission.READ_EXTERNAL_STORAGE
@@ -28,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
                                 , Manifest.permission.ACCESS_COARSE_LOCATION)
                         .onPermissionsResult(new PermissionsCheck.OnPermissionsResultListener() {
                             @Override
-                            public void onPermissionsResult(List<String> deniedPermissions, List<String> allPermissions) {
+                            public void onPermissionsResult(String[] deniedPermissions, String[] allPermissions) {
 
                             }
                         });

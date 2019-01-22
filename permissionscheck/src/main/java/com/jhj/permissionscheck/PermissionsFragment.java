@@ -13,7 +13,8 @@ import android.support.annotation.Nullable;
 public final class PermissionsFragment extends Fragment {
 
     private int mRequestCode = 0x10000000;
-    protected static final String REQUEST_PERMISSIONS = "requestPermissions";
+    private PermissionsCheck.OnPermissionsResultListener listener;
+    private String[] allPermissions;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -22,13 +23,16 @@ public final class PermissionsFragment extends Fragment {
     }
 
 
-    protected void permissionsRequest() {
-        String[] permissions = getArguments().getStringArray(REQUEST_PERMISSIONS);
-        if (permissions == null) {
+    protected void permissionsRequest(String[] allPermissions, PermissionsCheck.OnPermissionsResultListener resultPermissionsListener) {
+        this.allPermissions = allPermissions;
+        String[] deniedPermissions = PermissionsUtil.getDeniedPermissions(getActivity(), allPermissions);
+        this.listener = resultPermissionsListener;
+        if (deniedPermissions.length == 0 || allPermissions == null) {
             return;
         }
+        //对被禁止的权限进行请求
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(permissions, mRequestCode);
+            requestPermissions(deniedPermissions, mRequestCode);
         }
     }
 
@@ -36,8 +40,8 @@ public final class PermissionsFragment extends Fragment {
     @Override
     public void onRequestPermissionsResult(int requestCode, @Nullable String[] permissions, @Nullable int[] grantResults) {
         if (mRequestCode == requestCode) {
-            PermissionsCheck.getInstance(getActivity()).requestPermissionsResult(getActivity(),permissions);
+            String[] deniedPermissions = PermissionsUtil.getPermissionDenied(getActivity(), allPermissions);
+            listener.onPermissionsResult(deniedPermissions, allPermissions);
         }
     }
-
 }
